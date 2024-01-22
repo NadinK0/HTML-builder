@@ -1,6 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
-let dir = path.join(__dirname, '/secret-folder');
+let dir = path.join(__dirname, 'secret-folder');
 
 fs.readdir(dir, {withFileTypes: true})
     .then(filenames => {

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
 
-let txtFile = path.join(__dirname, '/02-write-file.txt');
+let txtFile = path.join(__dirname, '02-write-file.txt');
 fs.open(txtFile, 'w', (err) => {
     if(err) throw err;
 });
