@@ -8,57 +8,32 @@ const stylesDir = path.join(__dirname, 'styles');
 const assetsDir = path.join(__dirname, 'assets');
 let indexFile = path.join(__dirname, 'project-dist', 'index.html');
 let styleFile = path.join(__dirname, 'project-dist', 'style.css');
-let contentTemp;
+let contentTemp = '';
+
+async function copyFiles (oldDir, newDir) {
+ fs.readdir(oldDir, {withFileTypes: true})
+  .then (filenames => {
+    for (let filename of filenames) {
+      if (filename.isFile() === true) {
+        (async () => {
+          try {
+            await fs.copyFile(path.join(oldDir, filename.name), path.join(newDir, filename.name));
+          } catch {
+            console.error('Error!!!!');
+          }
+        })();
+      }
+      else {
+        fs.mkdir(path.join(newDir, filename.name), { recursive: true })
+        copyFiles (path.join(oldDir, filename.name), path.join(newDir, filename.name));
+      }
+    }
+  })
+}
 
 async function createDir () {
-  fs.mkdir (newDir, { recursive: true });
-  fs.mkdir (newAssets, { recursive: true });
-
-  fs.readdir(newDir)
-      .then (files => {
-          if (files.length !== 0) {
-              for (let file of files) {
-                  (async () => {
-                      try {
-                          await fs.unlink(path.join(newDir, file), (err => {
-                              if (err) console.log(err)}));
-                      } catch {
-                          console.error('Error!');
-                      }
-                  })();
-              }
-          }
-      })
-
-      fs.readdir(assetsDir, {withFileTypes: true})
-      .then (filenames => {
-          for (let filename of filenames) {
-            if (filename.isFile() !== true) {
-              (async () => {
-                try {
-                    await fs.mkdir (path.join(newAssets, filename.name), { recursive: true });
-                } catch {
-                    console.error('Error!');
-                }
-              })();
-            } else {
-              const innerDir = path.join(assetsDir, filename.name);
-              console.log(innerDir);
-              fs.readdir(innerDir)
-                .then (files => {
-                   for (let file of files) {
-                    (async () => {
-                        try {
-                            await fs.copyFile(path.join(innerDir, file), path.join(newAssets, file));
-                        } catch {
-                            console.error('Error!');
-                        }
-                    })();
-                    }
-                })
-              }
-          }
-      })
+  fs.mkdir(newDir, { recursive: true })
+  fs.mkdir(newAssets, { recursive: true })
 }
 
 
@@ -72,55 +47,65 @@ async function createDir () {
     }
   })();
 
-createDir()
-.then(
-fs.readdir(dir, {withFileTypes: true})
-    .then(filenames => {
-        const contentArr = [];
-        for (let filename of filenames) {
-            if (filename.isFile() === true && path.extname(filename.name) === '.html') {
-                (async () => {
-                    try {
-                      const componentsContent = await fs.readFile(path.join(dir, filename.name), { encoding: 'utf8' });
-                      const fname = filename.name.slice(0, filename.name.lastIndexOf('.'));
-                      contentTemp = contentTemp.replace(`{{${fname}}}`, componentsContent);
-                      fs.appendFile(indexFile, contentTemp, function (err) {
-                        if (err) throw err;
-                      });
-                    }
-                    catch (error) {
-                      console.log(error);
-                    }
-                  })();
-            }
-        }
-    })
-    .catch(err => {
-        console.log(err)
-    })
-  )
-  .then (
-    fs.readdir(stylesDir, {withFileTypes: true})
-    .then(filenames => {
-        const contentArr = [];
-        for (let filename of filenames) {
-            if (filename.isFile() === true && path.extname(filename.name) === '.css') {
-                (async () => {
-                    try {
-                      const content = await fs.readFile(path.join(stylesDir, filename.name), { encoding: 'utf8' });
-                      contentArr.push(content)
-                      fs.appendFile(styleFile, contentArr, function (err) {
-                        if (err) throw err;
-                      });
-                    }
-                    catch (error) {
-                      console.log(error);
-                    }
-                  })();
-            }
-        }
-    })
-    .catch(err => {
-        console.log(err)
-    })
-)
+    createDir()
+    .then(
+      fs.readdir(dir, {withFileTypes: true})
+        .then(filenames => {
+          const contentArr = [];
+              for (let filename of filenames) {
+                  if (filename.isFile() === true && path.extname(filename.name) === '.html') {
+                      (async () => {
+                          try {
+                            const componentsContent = await fs.readFile(path.join(dir, filename.name), { encoding: 'utf8' });
+                            const fname = filename.name.slice(0, filename.name.lastIndexOf('.'));
+                            contentTemp = contentTemp.replace(`{{${fname}}}`, componentsContent);
+                            contentArr.push(contentTemp);
+                            if (contentArr.length === filenames.length) {
+                              fs.appendFile(indexFile, contentArr[contentArr.length - 1], function (err) {
+                                if (err) throw err;
+                                console.log('Saved!');
+                              });
+                            }
+                          }
+                          catch (error) {
+                            console.log(error);
+                          }
+                        })();
+                  }
+              }
+            return contentTemp;
+          })
+          .catch(err => {
+              console.log(err)
+          })
+        )
+        .then (
+          fs.readdir(stylesDir, {withFileTypes: true})
+          .then(filenames => {
+              const contentArr = [];
+              for (let filename of filenames) {
+                  if (filename.isFile() === true && path.extname(filename.name) === '.css') {
+                      (async () => {
+                          try {
+                            const content = await fs.readFile(path.join(stylesDir, filename.name), { encoding: 'utf8' });
+                            contentArr.push(content)
+                            fs.appendFile(styleFile, contentArr, function (err) {
+                              if (err) throw err;
+                            });
+                          }
+                          catch (error) {
+                            console.log(error);
+                          }
+                        })();
+                  }
+              }
+          })
+          .catch(err => {
+              console.log(err)
+          })
+      )
+      .then(
+        copyFiles(assetsDir, newAssets)
+      )      
+
+ 
